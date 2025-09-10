@@ -1,0 +1,19 @@
+{
+    "name": "reminder-tg-bot",
+    "version": "1.0.0",
+    "scripts": {
+        "build": "tsc",
+        "start": "npm run build && node dist/bot/index.js"
+    },
+    "dependencies": {
+        "dotenv": "^16.0.0",
+        "express": "^5.1.0",
+        "telegraf": "^4.16.3"
+    },
+    "devDependencies": {
+        "@types/express": "^5.0.3",
+        "@types/node": "^24.0.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.8.3"
+    }
+}
