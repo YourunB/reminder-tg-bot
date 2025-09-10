@@ -60,11 +60,12 @@ function shouldSendReminder(schedule: string, date: Date): boolean {
 setInterval(() => {
   const now = new Date();
   const hour = now.getUTCHours() + TIMEZONE_OFFSET;
-  const minute = now.getUTCMinutes();
+  //const minute = now.getUTCMinutes();
 
-  if (hour === 17 && minute === 0) {
+  if (hour >= 21) {
     Object.entries(reminders).forEach(([chatId, list]) => {
       const key = `${chatId}_${now.toDateString()}`;
+
       if (sentToday.has(key)) return;
 
       list.forEach(reminder => {
