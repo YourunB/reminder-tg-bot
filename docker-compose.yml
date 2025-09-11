@@ -1,0 +1,15 @@
+services:
+  izi-reminder-bot:
+    build: .
+    container_name: izi-reminder-bot
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    networks:
+      - reminder-botnet
+
+networks:
+  reminder-botnet:
+    driver: bridge
