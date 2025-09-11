@@ -2,11 +2,11 @@ import { Telegraf } from 'telegraf';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import cron from 'node-cron';
 
 dotenv.config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN!;
-const TIMEZONE_OFFSET = 3;
 const DATA_PATH = path.resolve(__dirname, 'reminders.json');
 
 if (!BOT_TOKEN) throw new Error('BOT_TOKEN is missing');
@@ -56,27 +56,25 @@ function shouldSendReminder(schedule: string, date: Date): boolean {
   return false;
 }
 
-// 🕘 Reminder check every minute
-setInterval(() => {
+// 🕘 Reminder check at 21:00
+cron.schedule('0 21 * * *', () => {
   const now = new Date();
-  const hour = now.getUTCHours() + TIMEZONE_OFFSET;
-  //const minute = now.getUTCMinutes();
+  const keyDate = now.toDateString();
 
-  if (hour >= 21) {
-    Object.entries(reminders).forEach(([chatId, list]) => {
-      const key = `${chatId}_${now.toDateString()}`;
+  Object.entries(reminders).forEach(([chatId, list]) => {
+    const key = `${chatId}_${keyDate}`;
+    if (sentToday.has(key)) return;
 
-      if (sentToday.has(key)) return;
-
-      list.forEach(reminder => {
-        if (shouldSendReminder(reminder.schedule, now)) {
-          bot.telegram.sendMessage(chatId, `@${reminder.userTag}, не забудь про отчет`);
-          sentToday.add(key);
-        }
-      });
+    list.forEach(reminder => {
+      if (shouldSendReminder(reminder.schedule, now)) {
+        bot.telegram.sendMessage(chatId, `@${reminder.userTag}, не забудь про отчет`);
+        sentToday.add(key);
+      }
     });
-  }
-}, 60 * 1000);
+  });
+}, {
+  timezone: 'Europe/Moscow'
+});
 
 // 📩 Message handler
 bot.on('text', ctx => {
