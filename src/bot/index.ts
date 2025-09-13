@@ -7,8 +7,8 @@ import cron from 'node-cron';
 dotenv.config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN!;
-const DATA_PATH = path.resolve(__dirname, 'reminders.json');
-const REPORTS_PATH = path.resolve(__dirname, 'reports.json');
+const DATA_PATH = path.resolve(__dirname, '../../data/reminders.json');
+const REPORTS_PATH = path.resolve(__dirname, '../../data/reports.json');
 
 if (!BOT_TOKEN) throw new Error('BOT_TOKEN is missing');
 
