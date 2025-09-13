@@ -57,7 +57,7 @@ function shouldSendReminder(schedule: string, date: Date): boolean {
 }
 
 // 🕘 Reminder check at 21:00
-cron.schedule('0 21 * * *', () => {
+cron.schedule('30 12 * * *', () => {
   const now = new Date();
   const keyDate = now.toDateString();
 
@@ -81,7 +81,7 @@ bot.on('text', ctx => {
   const chatId = String(ctx.chat.id);
   const text = ctx.message.text.trim();
 
-  if (/@izi_reminder_bot\s+отчет\b/.test(text)) {
+  if (text.replace(/\s+/g, ' ').toLowerCase().includes('@izi_reminder_bot отчет')) {
     const key = `${chatId}_${new Date().toDateString()}`;
     sentToday.add(key);
   }
