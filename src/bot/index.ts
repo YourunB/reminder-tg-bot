@@ -8,11 +8,13 @@ dotenv.config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN!;
 const DATA_PATH = path.resolve(__dirname, 'reminders.json');
+const REPORTS_PATH = path.resolve(__dirname, 'reports.json');
 
 if (!BOT_TOKEN) throw new Error('BOT_TOKEN is missing');
 
 const bot = new Telegraf(BOT_TOKEN);
 const reminders: Record<string, Reminder[]> = loadReminders();
+const reports: Record<string, string> = loadReports();
 const sentToday: Set<string> = new Set();
 
 type Reminder = {
@@ -30,6 +32,18 @@ function loadReminders(): Record<string, Reminder[]> {
 
 function saveReminders() {
   fs.writeFileSync(DATA_PATH, JSON.stringify(reminders, null, 2));
+}
+
+function loadReports(): Record<string, string> {
+  try {
+    return JSON.parse(fs.readFileSync(REPORTS_PATH, 'utf-8'));
+  } catch {
+    return {};
+  }
+}
+
+function saveReports() {
+  fs.writeFileSync(REPORTS_PATH, JSON.stringify(reports, null, 2));
 }
 
 function normalizeSchedule(schedule: string): string {
@@ -56,12 +70,13 @@ function shouldSendReminder(schedule: string, date: Date): boolean {
   return false;
 }
 
-// 🕘 Reminder check at 21:00
-cron.schedule('30 12 * * *', () => {
+cron.schedule('0 21 * * *', () => {
   const now = new Date();
   const keyDate = now.toDateString();
 
   Object.entries(reminders).forEach(([chatId, list]) => {
+    if (reports[chatId] === keyDate) return;
+
     const key = `${chatId}_${keyDate}`;
     if (sentToday.has(key)) return;
 
@@ -76,14 +91,17 @@ cron.schedule('30 12 * * *', () => {
   timezone: 'Europe/Moscow'
 });
 
-// 📩 Message handler
 bot.on('text', ctx => {
   const chatId = String(ctx.chat.id);
   const text = ctx.message.text.trim();
 
   if (text.replace(/\s+/g, ' ').toLowerCase().includes('@izi_reminder_bot отчет')) {
-    const key = `${chatId}_${new Date().toDateString()}`;
+    const keyDate = new Date().toDateString();
+    const key = `${chatId}_${keyDate}`;
     sentToday.add(key);
+    reports[chatId] = keyDate;
+    saveReports();
+    console.log("✅ Отчет зафиксирован:", chatId, keyDate);
   }
 
   if (text.includes('@izi_reminder_bot сброс')) {
@@ -129,10 +147,10 @@ bot.on('text', ctx => {
       `✅ Отметить, что отчет уже был:\n` +
       `@izi_reminder_bot отчет\n\n` +
       `🕒 Поддерживаемые расписания:\n` +
-      `\nevery day, \nevery weekday, \nevery tue, mon, tue, wed, thu, fri, sat, sun\n\n` +
+      `\nevery day, \nevery weekday, \nevery mon, tue, wed, thu, fri, sat, sun\n\n` +
       `ℹ️ Напоминания приходят в 21:00, если в этот день не было сообщения "@izi_reminder_bot отчет"`
     );
-  }  
+  }
 });
 
 bot.launch();
