@@ -81,7 +81,7 @@ bot.on('text', ctx => {
   const chatId = String(ctx.chat.id);
   const text = ctx.message.text.trim();
 
-  if (text.includes('@izi_reminder_bot отчет')) {
+  if (/@izi_reminder_bot\s+отчет\b/.test(text)) {
     const key = `${chatId}_${new Date().toDateString()}`;
     sentToday.add(key);
   }
