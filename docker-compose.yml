@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     volumes:
-      - .:/app
+      - ./data:/app/data
     networks:
       - reminder-botnet
 
