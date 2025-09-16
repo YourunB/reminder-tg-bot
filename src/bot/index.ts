@@ -74,7 +74,7 @@ function getChatKey(chatId: number | string, threadId?: number): string {
   return threadId ? `${chatId}:${threadId}` : String(chatId);
 }
 
-cron.schedule('30 12 * * *', () => {
+cron.schedule('0 21 * * *', () => {
   const now = new Date();
   const keyDate = now.toDateString();
 
@@ -98,11 +98,17 @@ cron.schedule('30 12 * * *', () => {
   timezone: 'Europe/Moscow'
 });
 
-bot.on('text', ctx => {
+bot.on('message', ctx => {
   const chatId = String(ctx.chat.id);
-  const threadId = ctx.message.message_thread_id;
+  const threadId = 'message_thread_id' in ctx.message ? ctx.message.message_thread_id : undefined;
   const key = getChatKey(chatId, threadId);
-  const text = ctx.message.text.toLowerCase().trim();
+
+  const rawText =
+    ('text' in ctx.message && ctx.message.text) ||
+    ('caption' in ctx.message && ctx.message.caption) ||
+    '';
+
+  const text = rawText.toLowerCase().trim();
 
   if (text.includes('@izi_reminder_bot отчет')) {
     const keyDate = new Date().toDateString();
