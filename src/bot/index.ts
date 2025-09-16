@@ -70,20 +70,27 @@ function shouldSendReminder(schedule: string, date: Date): boolean {
   return false;
 }
 
-cron.schedule('0 21 * * *', () => {
+function getChatKey(chatId: number | string, threadId?: number): string {
+  return threadId ? `${chatId}:${threadId}` : String(chatId);
+}
+
+cron.schedule('30 12 * * *', () => {
   const now = new Date();
   const keyDate = now.toDateString();
 
-  Object.entries(reminders).forEach(([chatId, list]) => {
-    if (reports[chatId] === keyDate) return;
+  Object.entries(reminders).forEach(([key, list]) => {
+    if (reports[key] === keyDate) return;
 
-    const key = `${chatId}_${keyDate}`;
-    if (sentToday.has(key)) return;
+    const sentKey = `${key}_${keyDate}`;
+    if (sentToday.has(sentKey)) return;
 
+    const [chatId, threadId] = key.split(':');
     list.forEach(reminder => {
       if (shouldSendReminder(reminder.schedule, now)) {
-        bot.telegram.sendMessage(chatId, `@${reminder.userTag}, не забудь про отчет`);
-        sentToday.add(key);
+        bot.telegram.sendMessage(chatId, `@${reminder.userTag}, не забудь про отчет`, {
+          message_thread_id: threadId ? Number(threadId) : undefined
+        });
+        sentToday.add(sentKey);
       }
     });
   });
@@ -93,25 +100,27 @@ cron.schedule('0 21 * * *', () => {
 
 bot.on('text', ctx => {
   const chatId = String(ctx.chat.id);
-  const text = ctx.message.text.trim();
+  const threadId = ctx.message.message_thread_id;
+  const key = getChatKey(chatId, threadId);
+  const text = ctx.message.text.toLowerCase().trim();
 
-  if (text.replace(/\s+/g, ' ').toLowerCase().includes('@izi_reminder_bot отчет')) {
+  if (text.includes('@izi_reminder_bot отчет')) {
     const keyDate = new Date().toDateString();
-    const key = `${chatId}_${keyDate}`;
-    sentToday.add(key);
-    reports[chatId] = keyDate;
+    const sentKey = `${key}_${keyDate}`;
+    sentToday.add(sentKey);
+    reports[key] = keyDate;
     saveReports();
-    console.log("✅ Отчет зафиксирован:", chatId, keyDate);
+    console.log("✅ Отчет зафиксирован:", key, keyDate);
   }
 
   if (text.includes('@izi_reminder_bot сброс')) {
-    reminders[chatId] = [];
+    reminders[key] = [];
     saveReminders();
     ctx.reply('Все отслеживаемые отчеты сброшены.');
   }
 
   if (text.includes('@izi_reminder_bot список')) {
-    const list = reminders[chatId] || [];
+    const list = reminders[key] || [];
     if (list.length === 0) return ctx.reply('Нет активных напоминаний.');
     const msg = list.map(r => `@${r.userTag} — ${r.schedule}`).join('\n');
     ctx.reply(msg);
@@ -127,9 +136,9 @@ bot.on('text', ctx => {
     }
 
     const normalized = normalizeSchedule(schedule);
-    const list = reminders[chatId] || [];
+    const list = reminders[key] || [];
     list.push({ userTag, schedule: normalized });
-    reminders[chatId] = list;
+    reminders[key] = list;
     saveReminders();
     ctx.reply(`Добавлено: @${userTag} — ${normalized}`);
   }
